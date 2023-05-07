@@ -3,6 +3,8 @@ title: "Exercise 3"
 format: html
 ---
 
+
+#read librarys
 ```{r}
 library(dplyr)
 library(readr)
@@ -10,7 +12,12 @@ library(sf)
 library(terra)
 library(ggplot2)
 
+```
 
+
+
+#Task a-c
+```{r}
 as.POSIXct("2015-07-01", tz ="UTC")
 
 wildschwein_BE <- read_delim("wildschwein_BE_2056.csv", ",")
@@ -57,6 +64,83 @@ sabi |>
   geom_path()+
   coord_fixed()
 
+```
+
+
+#Preparation, own Data?
+```{r}
+
+library("readr")
+library("sf")
+
+posmo <- read_delim("", ",")
+
+
+# Keep only the necessary columns
+posmo <- select(posmo, datetime, lon_x, lat_y)
+
+
+posmo <- st_as_sf(posmo, coords = c("lon_x","lat_y"), crs = 4326) |>
+  st_transform(2056)
+
+head(posmo)
+
+posmo_coordinates <- st_coordinates(posmo)
+
+posmo <- cbind(posmo, posmo_coordinates)
+
+posmo_filter <- posmo |>
+    filter(as.Date(datetime) == "2023-03-23")
 
 
 ```
+
+
+#Task 1
+
+```{r}
+posmo_filter <- posmo_filter |> 
+  filter(datetime >=as.POSIXct("", tz ="UTC"), datetime < as.POSIXct("", tz ="UTC"))
+
+ggplot(posmo_filter, aes(E,N, color = datetime))+
+  geom_point()+
+  geom_path()+
+  coord_equal()
+
+posmo_filter|>
+  head(50) |> 
+  ggplot(aes(DatetimeUTC, 1))+
+  geom_point()
+
+ posmo_filter <- posmo_filter |> 
+  mutate(
+    n_plus1 = sqrt((lead(lon_x,1)-lon_x)^2 + (lead(lon_y,1)-lon_y)^2), 
+    n_plus2 = sqrt((lead(lon_x,2)-lon_x)^2 + (lead(lon_y,2)-lon_y)^2),
+    n_plus1 = sqrt((lag(lon_x,1)-lon_x)^2 + (lag(lon_y,1)-lon_y)^2), 
+    n_plus2 = sqrt((lag(lon_x,2)-lon_x)^2 + (lag(lon_y,2)-lon_y)^2)
+  )
+
+
+
+sabi <- sabi |> 
+  rowwise() |> 
+  mutate(
+    stepmean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
+  ) |> 
+  ungroup()
+
+ggplot(sabi, aes(stepmean))+
+  geom_histogram(binwidth =10)+
+  geom_vline(xintercept = mean(sabi$stepmean, na.rm = TRUE))
+
+sabi |> 
+  mutate(static = stepmean<mean(stepmean, na.rm=TRUE)) |> 
+  ggplot(aes(E,N))+
+  geom_point(aes(colour = static))+
+  geom_path()+
+  coord_fixed()
+
+```
+
+
+
