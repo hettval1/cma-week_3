@@ -6,11 +6,14 @@ format: html
 
 #read librarys
 ```{r}
+install.packages("SimilarityMeasures")
+library(SimilarityMeasures)
 library(dplyr)
 library(readr)
 library(sf)
 library(terra)
 library(ggplot2)
+library(tidyr)
 
 ```
 
@@ -73,7 +76,7 @@ sabi |>
 library("readr")
 library("sf")
 
-posmo <- read_delim("", ",")
+posmo <- read_delim("posmo_2023.csv", ",")
 
 
 # Keep only the necessary columns
@@ -90,7 +93,7 @@ posmo_coordinates <- st_coordinates(posmo)
 posmo <- cbind(posmo, posmo_coordinates)
 
 posmo_filter <- posmo |>
-    filter(as.Date(datetime) == "2023-03-23")
+    filter(as.Date(datetime) == "2023-04-23")
 
 
 ```
@@ -99,48 +102,106 @@ posmo_filter <- posmo |>
 #Task 1
 
 ```{r}
-posmo_filter <- posmo_filter |> 
-  filter(datetime >=as.POSIXct("", tz ="UTC"), datetime < as.POSIXct("", tz ="UTC"))
+# posmo_filter <- posmo_filter |> 
+#   filter(datetime >=as.POSIXct("", tz ="UTC"), datetime < as.POSIXct("", tz ="UTC"))
 
-ggplot(posmo_filter, aes(E,N, color = datetime))+
+ggplot(posmo_filter, aes(X,Y, color = datetime))+
   geom_point()+
   geom_path()+
   coord_equal()
 
 posmo_filter|>
-  head(50) |> 
-  ggplot(aes(DatetimeUTC, 1))+
+  head(300) |> 
+  ggplot(aes(datetime, 1))+
   geom_point()
 
  posmo_filter <- posmo_filter |> 
   mutate(
-    n_plus1 = sqrt((lead(lon_x,1)-lon_x)^2 + (lead(lon_y,1)-lon_y)^2), 
-    n_plus2 = sqrt((lead(lon_x,2)-lon_x)^2 + (lead(lon_y,2)-lon_y)^2),
-    n_plus1 = sqrt((lag(lon_x,1)-lon_x)^2 + (lag(lon_y,1)-lon_y)^2), 
-    n_plus2 = sqrt((lag(lon_x,2)-lon_x)^2 + (lag(lon_y,2)-lon_y)^2)
+    n_plus1 = sqrt((lead(X,20)-X)^2 + (lead(Y,20)-Y)^2), 
+    n_plus2 = sqrt((lead(X,40)-X)^2 + (lead(Y,40)-Y)^2),
+    n_minus1 = sqrt((lag(X,20)-X)^2 + (lag(Y,20)-Y)^2), 
+    n_minus2 = sqrt((lag(X,40)-X)^2 + (lag(Y,40)-Y)^2)
   )
 
 
 
-sabi <- sabi |> 
+posmo_filter <- posmo_filter |> 
   rowwise() |> 
   mutate(
     stepmean = mean(c(n_minus1, n_minus2, n_plus1, n_plus2))
   ) |> 
   ungroup()
 
-ggplot(sabi, aes(stepmean))+
+ggplot(posmo_filter, aes(stepmean))+
   geom_histogram(binwidth =10)+
-  geom_vline(xintercept = mean(sabi$stepmean, na.rm = TRUE))
+  geom_vline(xintercept = mean(posmo_filter$stepmean, na.rm = TRUE))
 
-sabi |> 
-  mutate(static = stepmean<mean(stepmean, na.rm=TRUE)) |> 
-  ggplot(aes(E,N))+
+  
+posmo_filter2 |> 
+  ggplot(aes(X,Y))+
   geom_point(aes(colour = static))+
   geom_path()+
   coord_fixed()
 
+
+posmo_filter <- posmo_filter |>
+    ungroup() |>
+    mutate(static =  stepmean<200, na.rm=TRUE)|>
+    drop_na(static)
+
+ggplot(posmo_filter, aes(X,Y)) +
+  geom_path() +
+  geom_point(aes(color = static)) +
+  coord_equal()
+
 ```
 
+
+#Task 4
+```{r}
+rle_id <- function(vec) {
+    x <- rle(vec)$lengths
+    as.factor(rep(seq_along(x), times = x))
+}
+
+posmo_filter <- posmo_filter |>
+    mutate(segment_id = rle_id(static))
+
+ggplot(posmo_filter, aes(X,Y)) +
+  geom_path() +
+  geom_point(aes(color = segment_id)) +
+  coord_equal()
+
+
+
+```
+
+
+#Task 5
+
+```{r}
+pedestrian <- read_delim("pedestrian.csv")
+?DTW
+
+path1 <- pedestrian |> 
+  filter(TrajID == 1) |> 
+  as.matrix()
+
+path2 <- filter(pedestrian, TrajID == 2)
+path2<- as.matrix(path2)
+
+path3 <- as.matrix(filter(pedestrian, TrajID == 3))
+
+path4 <- as.matrix(filter(pedestrian, TrajID == 4))
+
+path5 <- as.matrix(filter(pedestrian, TrajID == 5))
+
+path6 <- as.matrix(filter(pedestrian, TrajID == 6))
+
+
+DTW(path1, path2, path3, path4, path5, path6)
+
+str(pedestrian)
+```
 
 
