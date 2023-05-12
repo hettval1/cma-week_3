@@ -185,21 +185,61 @@ pedestrian <- read_delim("pedestrian.csv")
 
 path1 <- pedestrian |> 
   filter(TrajID == 1) |> 
+  select(E,N) |> 
   as.matrix()
 
-path2 <- filter(pedestrian, TrajID == 2)
-path2<- as.matrix(path2)
+path2 <- pedestrian |> 
+  filter(TrajID == 2) |>
+  select(E,N) |> 
+  as.matrix()
 
-path3 <- as.matrix(filter(pedestrian, TrajID == 3))
+path3 <- pedestrian |> 
+  filter(TrajID == 3) |>
+  select(E,N) |> 
+  as.matrix()
 
-path4 <- as.matrix(filter(pedestrian, TrajID == 4))
+path4 <- pedestrian |> 
+  filter(TrajID == 4) |>
+  select(E,N) |> 
+  as.matrix()
 
-path5 <- as.matrix(filter(pedestrian, TrajID == 5))
+path5 <- pedestrian |> 
+  filter(TrajID == 5) |>
+  select(E,N) |> 
+  as.matrix()
 
-path6 <- as.matrix(filter(pedestrian, TrajID == 6))
+path6 <- pedestrian |> 
+  filter(TrajID == 6) |>
+  select(E,N) |> 
+  as.matrix()
 
 
-DTW(path1, path2, path3, path4, path5, path6)
+
+dtw12 <- DTW(path1, path2)
+dtw13 <- DTW(path1, path3)
+dtw14 <- DTW(path1, path4)
+dtw15 <- DTW(path1, path5)
+dtw16 <- DTW(path1, path6)
+
+f12 <- Frechet(path1,path2)
+f13 <- Frechet(path1,path3)
+f14 <- Frechet(path1,path4)
+f15 <- Frechet(path1,path5)
+f16 <- Frechet(path1,path6)
+
+lcss12<- LCSS(path1, path2)
+lcss13<- LCSS(path1, path3)
+lcss14<- LCSS(path1, path4)
+lcss15<- LCSS(path1, path5)
+lcss16<- LCSS(path1, path6)
+
+ed12 <- EditDist(path1, path2)
+ed13 <- EditDist(path1, path3)
+ed14 <- EditDist(path1, path4)
+ed15 <- EditDist(path1, path5)
+ed16 <- EditDist(path1, path6)
+
+
 
 str(pedestrian)
 ```
